@@ -1,0 +1,15 @@
+# --- Configuration ---
+
+DATA_FILE_PATH: "data/skill_builder_data.csv"
+TRAIN_DATA_PATH: "data/bkt_train_data.pkl"
+TEST_DATA_PATH: "data/bkt_test_data.pkl"
+TEST_SIZE: 0.2 # Test set size fraction
+MIN_SEQ_LENGTH: 2 # Minimum sequence length for a (user, skill) pair to be included
+TRAINED_PARAMS_PATH: "data/bkt_trained_params.json"
+OUTPUT_DIR: "data/processed/"
+
+# Initial parameters for skills that have very little data or for the fitting process
+DEFAULT_INITIAL_PARAMS: { "p_L0": 0.2, "p_T": 0.1, "p_G": 0.1, "p_S": 0.05 }
+MIN_SEQUENCES_PER_SKILL: 5 # Only train skills with at least this many sequences
+
+SYNTHETIC_DATA_PATH: "data/synthetic_students_data.json"
