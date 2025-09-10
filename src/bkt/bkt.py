@@ -1,5 +1,5 @@
 import numpy as np
-from src.bkt.hmm import HiddenMarkovModel
+from hmm import HiddenMarkovModel
 
 class BKTModel:
     """
@@ -17,7 +17,7 @@ class BKTModel:
     def __init__(self, p_L0=0.1, p_T=0.1, p_G=0.1, p_S=0.1):
         self.p_L0 = p_L0
         self.p_T = p_T
-        self.p_G = p_G
+        self.p_G = p_G 
         self.p_S = p_S
         self._update_hmm_from_bkt_params()
 
@@ -136,130 +136,297 @@ class BKTModel:
                             prob_correct_if_not_known * (1.0 - prob_known_for_next_item)
         return prob_next_correct
 
-    def fit(self, sequences_for_skill, tol=1e-4, max_iter=100,
-            initial_p_L0=0.1, initial_p_T=0.1, initial_p_G=0.1, initial_p_S=0.1):
-        """
-        Custom implemetation of the Baum-Welch algorithm with respect to the BKT logic.
+    # def fit(self, sequences_for_skill, tol=1e-4, max_iter=100,
+    #         initial_p_L0=0.1, initial_p_T=0.1, initial_p_G=0.1, initial_p_S=0.1):
+    #     """
+    #     Custom implemetation of the Baum-Welch algorithm with respect to the BKT logic.
 
-        As you may see from the code, the M step is not the standard one.
-        It is adapted to the BKT model, where we update the parameters based on the expected counts
-        of transitions and observations, rather than the standard HMM counts.
+    #     As you may see from the code, the M step is not the standard one.
+    #     It is adapted to the BKT model, where we update the parameters based on the expected counts
+    #     of transitions and observations, rather than the standard HMM counts.
 
-        Fits the BKT parameters (p_L0, p_T, p_G, p_S) for a single skill
-        using Baum-Welch from the underlying HMM.
+    #     Fits the BKT parameters (p_L0, p_T, p_G, p_S) for a single skill
+    #     using Baum-Welch from the underlying HMM.
         
-        sequences_for_skill: A list of observation sequences. Each sequence is a
-                             list/array of 0s (incorrect) and 1s (correct) 
-                             for THIS skill from different students or sessions.
+    #     sequences_for_skill: A list of observation sequences. Each sequence is a
+    #                          list/array of 0s (incorrect) and 1s (correct) 
+    #                          for THIS skill from different students or sessions.
+    #     """
+    #     # Initialize BKT parameters
+    #     self.p_L0 = initial_p_L0
+    #     self.p_T = initial_p_T
+    #     self.p_G = initial_p_G
+    #     self.p_S = initial_p_S
+    #     self._update_hmm_from_bkt_params() # Set up HMM with these initial BKT params
+        
+    #     print(f"Initial BKT params: L0={self.p_L0:.3f}, T={self.p_T:.3f}, G={self.p_G:.3f}, S={self.p_S:.3f}")
+
+    #     # The HMM's Baum-Welch will iteratively update its matrices.
+    #     # After each iteration (or at the end), we'll extract BKT params.
+    #     # For a more BKT-specific EM, we'd directly update p_L0, p_T, p_G, p_S.
+        
+    #     prev_overall_log_likelihood = -np.inf
+
+    #     for iteration in range(max_iter):
+    #         # E-step: Use current HMM (based on current BKT params) to calculate expectations
+            
+    #         exp_L0_known_sum = 0
+    #         num_valid_sequences = 0
+            
+    #         exp_trans_NK_K_sum = 0 # Numerator for P(T)
+    #         exp_in_NK_sum_for_T_den = 0 # Denominator for P(T) (sum gamma[t,NK] up to T-2)
+            
+    #         exp_in_NK_and_correct_sum = 0 # Numerator for P(G)
+    #         exp_in_NK_sum_for_G_den = 0   # Denominator for P(G) (sum gamma[t,NK] over all t)
+            
+    #         exp_in_K_and_incorrect_sum = 0 # Numerator for P(S)
+    #         exp_in_K_sum_for_S_den = 0     # Denominator for P(S) (sum gamma[t,K] over all t)
+
+    #         current_overall_log_likelihood = 0
+
+    #         for obs_sequence in sequences_for_skill:
+    #             T = len(obs_sequence)
+    #             if T == 0: continue
+
+    #             alpha = self.hmm.forward(obs_sequence)
+    #             prob_O_for_seq = np.sum(alpha[-1, :])
+
+    #             if prob_O_for_seq == 0 or np.isnan(prob_O_for_seq) or np.isinf(prob_O_for_seq):
+    #                 continue # Skip impossible sequence
+                
+    #             beta = self.hmm.backward(obs_sequence)
+    #             num_valid_sequences += 1
+    #             current_overall_log_likelihood += np.log(prob_O_for_seq)
+
+    #             # Calculate gamma
+    #             gamma = np.zeros((T, self.hmm.states))
+    #             for t in range(T):
+    #                 gamma_t_denom = np.sum(alpha[t, :] * beta[t, :]) # This should be prob_O_for_seq
+    #                 if prob_O_for_seq == 0: continue 
+    #                 gamma[t, :] = (alpha[t, :] * beta[t, :]) / prob_O_for_seq
+                
+    #             exp_L0_known_sum += gamma[0, 1] # State 1 is Known
+
+    #             # Calculate xi
+    #             xi = np.zeros((T - 1, self.hmm.states, self.hmm.states))
+    #             for t in range(T - 1):
+    #                 xi_t_denom = 0
+    #                 for i_s in range(self.hmm.states):
+    #                     for j_s in range(self.hmm.states):
+    #                         term = (alpha[t, i_s] * self.hmm.states_transition_matrix[i_s, j_s] *
+    #                                 self.hmm.states_to_observations[j_s, obs_sequence[t+1]] *
+    #                                 beta[t+1, j_s])
+    #                         xi[t, i_s, j_s] = term / prob_O_for_seq if prob_O_for_seq > 0 else 0
+                
+    #             # Accumulate for P(T)
+    #             for t_trans in range(T - 1): # xi is for t=0 to T-2
+    #                 exp_trans_NK_K_sum += xi[t_trans, 0, 1]  # Transition from NotKnown (0) to Known (1)
+    #                 exp_in_NK_sum_for_T_den += gamma[t_trans, 0]
+                
+    #             # Accumulate for P(G) and P(S) denominators
+    #             exp_in_NK_sum_for_G_den += np.sum(gamma[:, 0]) # Sum gamma[t, NotKnown] over all t
+    #             exp_in_K_sum_for_S_den += np.sum(gamma[:, 1])   # Sum gamma[t, Known] over all t
+
+    #             for t_obs in range(T):
+    #                 if obs_sequence[t_obs] == 1: # Correct observation
+    #                     exp_in_NK_and_correct_sum += gamma[t_obs, 0] # Correct obs while in NotKnown
+    #                 else: # Incorrect observation
+    #                     exp_in_K_and_incorrect_sum += gamma[t_obs, 1] # Incorrect obs while in Known
+            
+    #         if num_valid_sequences == 0:
+    #             print("BKT Fit: No valid sequences for parameter update.")
+    #             break
+
+    #         # M-Step
+    #         self.p_L0 = exp_L0_known_sum / num_valid_sequences if num_valid_sequences > 0 else self.p_L0
+    #         self.p_T = exp_trans_NK_K_sum / exp_in_NK_sum_for_T_den if exp_in_NK_sum_for_T_den > 0 else self.p_T
+    #         self.p_G = exp_in_NK_and_correct_sum / exp_in_NK_sum_for_G_den if exp_in_NK_sum_for_G_den > 0 else self.p_G
+    #         self.p_S = exp_in_K_and_incorrect_sum / exp_in_K_sum_for_S_den if exp_in_K_sum_for_S_den > 0 else self.p_S
+            
+    #         # Clip and update HMM
+    #         self.p_L0 = np.clip(self.p_L0, 0.001, 0.999)
+    #         self.p_T  = np.clip(self.p_T,  0.001, 0.999) # P(T) can be high
+    #         self.p_G  = np.clip(self.p_G,  0.001, 0.499) # Guess usually lower
+    #         self.p_S  = np.clip(self.p_S,  0.001, 0.299) # Slip usually lower
+    #         self._update_hmm_from_bkt_params()
+
+    #         print(f"Iter {iteration+1}: LL={current_overall_log_likelihood:.2f}, L0={self.p_L0:.3f}, T={self.p_T:.3f}, G={self.p_G:.3f}, S={self.p_S:.3f}")
+
+    #         if abs(current_overall_log_likelihood - prev_overall_log_likelihood) < tol:
+    #             print(f"BKT Fit Converged at iteration {iteration+1}")
+    #             break
+    #         prev_overall_log_likelihood = current_overall_log_likelihood
+    #         if iteration == max_iter - 1:
+    #             print("BKT Fit Max iterations reached.")
+        
+    #     return self.p_L0, self.p_T, self.p_G, self.p_S
+
+    def _compute_gamma_xi_from_alpha_beta(self, alpha, beta, obs_seq, eps=1e-12):
         """
+        Robust computation of gamma and xi that does NOT assume alpha/beta are
+        unscaled. Normalizes per-row (for gamma) and per-time (for xi).
+        alpha: (T, S)
+        beta:  (T, S)
+        obs_seq: array-like of length T with values 0/1
+        Returns:
+            gamma: (T, S)
+            xi:    (T-1, S, S)  (empty array if T == 1)
+        """
+        alpha = np.asarray(alpha, dtype=float)
+        beta = np.asarray(beta, dtype=float)
+        obs_seq = np.asarray(obs_seq, dtype=int)
+        T, S = alpha.shape
+
+        # gamma: elementwise product then normalize each time step
+        gamma_raw = alpha * beta                         # shape (T, S)
+        row_sums = gamma_raw.sum(axis=1, keepdims=True)  # shape (T, 1)
+        gamma = gamma_raw / (row_sums + eps)            # shape (T, S)
+
+        # xi: for each t, xi[t,i,j] proportional to alpha[t,i] * A[i,j] * B[j,obs[t+1]] * beta[t+1,j]
+        if T > 1:
+            A = self.hmm.states_transition_matrix         # (S, S)
+            B = self.hmm.states_to_observations           # (S, num_observations)
+            xi = np.zeros((T - 1, S, S), dtype=float)
+            for t in range(T - 1):
+                # alpha_t: (S,1), beta_tp1: (1,S)
+                alpha_t = alpha[t, :].reshape(S, 1)
+                beta_tp1 = beta[t + 1, :].reshape(1, S)
+                emission_tp1 = B[:, obs_seq[t + 1]].reshape(1, S)  # (1, S) indexed by j
+                # Broadcast to (S, S): alpha_t * A * emission_tp1 * beta_tp1
+                xi_raw = alpha_t * A * emission_tp1 * beta_tp1
+                xi_sum = xi_raw.sum()
+                xi[t] = xi_raw / (xi_sum + eps)
+        else:
+            xi = np.zeros((0, alpha.shape[1], alpha.shape[1]), dtype=float)
+
+        return gamma, xi
+
+
+    def fit(self,
+            sequences_for_skill,
+            tol=1e-4,
+            max_iter=100,
+            initial_p_L0=0.1,
+            initial_p_T=0.1,
+            initial_p_G=0.1,
+            initial_p_S=0.1):
+        """
+        Baum-Welch fitted to BKT, updated to be robust to scaled/log alpha/beta.
+        This version computes gamma/xi using per-row/per-time normalization so it
+        DOES NOT rely on `prob_O_for_seq = sum(alpha[-1,:])` being the true
+        sequence probability (fix for item #2).
+        """
+        eps = 1e-12
         # Initialize BKT parameters
         self.p_L0 = initial_p_L0
         self.p_T = initial_p_T
         self.p_G = initial_p_G
         self.p_S = initial_p_S
-        self._update_hmm_from_bkt_params() # Set up HMM with these initial BKT params
-        
+        self._update_hmm_from_bkt_params()
+
         print(f"Initial BKT params: L0={self.p_L0:.3f}, T={self.p_T:.3f}, G={self.p_G:.3f}, S={self.p_S:.3f}")
 
-        # The HMM's Baum-Welch will iteratively update its matrices.
-        # After each iteration (or at the end), we'll extract BKT params.
-        # For a more BKT-specific EM, we'd directly update p_L0, p_T, p_G, p_S.
-        
         prev_overall_log_likelihood = -np.inf
 
         for iteration in range(max_iter):
-            # E-step: Use current HMM (based on current BKT params) to calculate expectations
-            
-            exp_L0_known_sum = 0
+            # E-step accumulators (expected counts)
+            exp_L0_known_sum = 0.0
             num_valid_sequences = 0
-            
-            exp_trans_NK_K_sum = 0 # Numerator for P(T)
-            exp_in_NK_sum_for_T_den = 0 # Denominator for P(T) (sum gamma[t,NK] up to T-2)
-            
-            exp_in_NK_and_correct_sum = 0 # Numerator for P(G)
-            exp_in_NK_sum_for_G_den = 0   # Denominator for P(G) (sum gamma[t,NK] over all t)
-            
-            exp_in_K_and_incorrect_sum = 0 # Numerator for P(S)
-            exp_in_K_sum_for_S_den = 0     # Denominator for P(S) (sum gamma[t,K] over all t)
 
-            current_overall_log_likelihood = 0
+            exp_trans_NK_K_sum = 0.0
+            exp_in_NK_sum_for_T_den = 0.0
+
+            exp_in_NK_and_correct_sum = 0.0
+            exp_in_NK_sum_for_G_den = 0.0
+
+            exp_in_K_and_incorrect_sum = 0.0
+            exp_in_K_sum_for_S_den = 0.0
+
+            current_overall_log_likelihood = 0.0
 
             for obs_sequence in sequences_for_skill:
                 T = len(obs_sequence)
-                if T == 0: continue
+                if T == 0:
+                    continue
 
+                obs_sequence = np.asarray(obs_sequence, dtype=int)
+                # get alpha/beta from underlying HMM (we cannot assume scaling semantics)
                 alpha = self.hmm.forward(obs_sequence)
-                prob_O_for_seq = np.sum(alpha[-1, :])
+                beta  = self.hmm.backward(obs_sequence)
 
-                if prob_O_for_seq == 0 or np.isnan(prob_O_for_seq) or np.isinf(prob_O_for_seq):
-                    continue # Skip impossible sequence
-                
-                beta = self.hmm.backward(obs_sequence)
+                if alpha is None or beta is None or alpha.size == 0 or beta.size == 0:
+                    # skip sequences which cannot be scored by HMM
+                    continue
+
+                # Compute gamma and xi robustly (this is the critical fix)
+                gamma, xi = self._compute_gamma_xi_from_alpha_beta(alpha, beta, obs_sequence, eps=eps)
+
+                # Attempt a safe per-sequence log-likelihood estimate. If forward is unscaled,
+                # sum(alpha[-1,:]) approximates the prob of the sequence; otherwise this may be 1.
+                # We still add the log of that (with eps) as a diagnostic value.
+                seq_prob_est = np.sum(alpha[-1, :])
+                current_overall_log_likelihood += np.log(seq_prob_est + eps)
+
                 num_valid_sequences += 1
-                current_overall_log_likelihood += np.log(prob_O_for_seq)
 
-                # Calculate gamma
-                gamma = np.zeros((T, self.hmm.states))
-                for t in range(T):
-                    gamma_t_denom = np.sum(alpha[t, :] * beta[t, :]) # This should be prob_O_for_seq
-                    if prob_O_for_seq == 0: continue 
-                    gamma[t, :] = (alpha[t, :] * beta[t, :]) / prob_O_for_seq
-                
-                exp_L0_known_sum += gamma[0, 1] # State 1 is Known
+                # accumulate expected initial-known
+                exp_L0_known_sum += gamma[0, 1]  # index 1 = Known
 
-                # Calculate xi
-                xi = np.zeros((T - 1, self.hmm.states, self.hmm.states))
-                for t in range(T - 1):
-                    xi_t_denom = 0
-                    for i_s in range(self.hmm.states):
-                        for j_s in range(self.hmm.states):
-                            term = (alpha[t, i_s] * self.hmm.states_transition_matrix[i_s, j_s] *
-                                    self.hmm.states_to_observations[j_s, obs_sequence[t+1]] *
-                                    beta[t+1, j_s])
-                            xi[t, i_s, j_s] = term / prob_O_for_seq if prob_O_for_seq > 0 else 0
-                
-                # Accumulate for P(T)
-                for t_trans in range(T - 1): # xi is for t=0 to T-2
-                    exp_trans_NK_K_sum += xi[t_trans, 0, 1]  # Transition from NotKnown (0) to Known (1)
-                    exp_in_NK_sum_for_T_den += gamma[t_trans, 0]
-                
-                # Accumulate for P(G) and P(S) denominators
-                exp_in_NK_sum_for_G_den += np.sum(gamma[:, 0]) # Sum gamma[t, NotKnown] over all t
-                exp_in_K_sum_for_S_den += np.sum(gamma[:, 1])   # Sum gamma[t, Known] over all t
+                # transitions (NotKnown->Known) across t=0..T-2
+                if T > 1:
+                    exp_trans_NK_K_sum += np.sum(xi[:, 0, 1])
+                    exp_in_NK_sum_for_T_den += np.sum(gamma[:-1, 0])  # gamma at t=0..T-2 for NotKnown
 
-                for t_obs in range(T):
-                    if obs_sequence[t_obs] == 1: # Correct observation
-                        exp_in_NK_and_correct_sum += gamma[t_obs, 0] # Correct obs while in NotKnown
-                    else: # Incorrect observation
-                        exp_in_K_and_incorrect_sum += gamma[t_obs, 1] # Incorrect obs while in Known
-            
+                # Guess and Slip expected counts/denoms
+                exp_in_NK_and_correct_sum += np.sum(gamma[:, 0] * (obs_sequence == 1))
+                exp_in_NK_sum_for_G_den += np.sum(gamma[:, 0])
+
+                exp_in_K_and_incorrect_sum += np.sum(gamma[:, 1] * (obs_sequence == 0))
+                exp_in_K_sum_for_S_den += np.sum(gamma[:, 1])
+
             if num_valid_sequences == 0:
                 print("BKT Fit: No valid sequences for parameter update.")
                 break
 
-            # M-Step
-            self.p_L0 = exp_L0_known_sum / num_valid_sequences if num_valid_sequences > 0 else self.p_L0
-            self.p_T = exp_trans_NK_K_sum / exp_in_NK_sum_for_T_den if exp_in_NK_sum_for_T_den > 0 else self.p_T
-            self.p_G = exp_in_NK_and_correct_sum / exp_in_NK_sum_for_G_den if exp_in_NK_sum_for_G_den > 0 else self.p_G
-            self.p_S = exp_in_K_and_incorrect_sum / exp_in_K_sum_for_S_den if exp_in_K_sum_for_S_den > 0 else self.p_S
-            
-            # Clip and update HMM
-            self.p_L0 = np.clip(self.p_L0, 0.001, 0.999)
-            self.p_T  = np.clip(self.p_T,  0.001, 0.999) # P(T) can be high
-            self.p_G  = np.clip(self.p_G,  0.001, 0.499) # Guess usually lower
-            self.p_S  = np.clip(self.p_S,  0.001, 0.299) # Slip usually lower
+            # M-step: update parameters using expected counts with tiny smoothing eps to avoid division by zero
+            self.p_L0 = (exp_L0_known_sum + eps) / (num_valid_sequences + 2 * eps)
+
+            if exp_in_NK_sum_for_T_den > 0:
+                self.p_T = (exp_trans_NK_K_sum + eps) / (exp_in_NK_sum_for_T_den + 2 * eps)
+            # else keep previous p_T
+
+            if exp_in_NK_sum_for_G_den > 0:
+                self.p_G = (exp_in_NK_and_correct_sum + eps) / (exp_in_NK_sum_for_G_den + 2 * eps)
+
+            if exp_in_K_sum_for_S_den > 0:
+                self.p_S = (exp_in_K_and_incorrect_sum + eps) / (exp_in_K_sum_for_S_den + 2 * eps)
+
+            # gentle clipping to keep probabilities in (0,1)
+            clip_eps = 1e-6
+            self.p_L0 = float(np.clip(self.p_L0, clip_eps, 1.0 - clip_eps))
+            self.p_T  = float(np.clip(self.p_T, clip_eps, 1.0 - clip_eps))
+            self.p_G  = float(np.clip(self.p_G, clip_eps, 1.0 - clip_eps))
+            self.p_S  = float(np.clip(self.p_S, clip_eps, 1.0 - clip_eps))
+
+            # update underlying HMM matrices from BKT params
             self._update_hmm_from_bkt_params()
 
-            print(f"Iter {iteration+1}: LL={current_overall_log_likelihood:.2f}, L0={self.p_L0:.3f}, T={self.p_T:.3f}, G={self.p_G:.3f}, S={self.p_S:.3f}")
+            print(f"Iter {iteration+1}: LL_est={current_overall_log_likelihood:.6f}, L0={self.p_L0:.3f}, T={self.p_T:.3f}, G={self.p_G:.3f}, S={self.p_S:.3f}")
 
-            if abs(current_overall_log_likelihood - prev_overall_log_likelihood) < tol:
-                print(f"BKT Fit Converged at iteration {iteration+1}")
-                break
+            # convergence: use relative/absolute criteria on log-likelihood
+            if iteration > 0:
+                delta = current_overall_log_likelihood - prev_overall_log_likelihood
+                if abs(delta) < tol or abs(delta) / (abs(prev_overall_log_likelihood) + eps) < tol:
+                    print(f"BKT Fit Converged at iteration {iteration+1}")
+                    break
+
             prev_overall_log_likelihood = current_overall_log_likelihood
+
             if iteration == max_iter - 1:
                 print("BKT Fit Max iterations reached.")
-        
+
         return self.p_L0, self.p_T, self.p_G, self.p_S
+
 
 # --- Example Usage for unit testing---
 if __name__ == '__main__':

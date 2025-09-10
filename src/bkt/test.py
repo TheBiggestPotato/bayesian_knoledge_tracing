@@ -1,7 +1,7 @@
 import pickle
 import json
 import numpy as np
-from src.bkt.bkt import BKTModel
+from bkt import BKTModel
 from sklearn.metrics import mean_squared_error, roc_auc_score, log_loss
 import yaml
 

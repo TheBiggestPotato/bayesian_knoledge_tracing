@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from src.bkt.bkt import BKTModel
+from bkt import BKTModel
 import json
 import yaml
 

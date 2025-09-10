@@ -5,6 +5,7 @@ import os
 import random
 import yaml
 import pandas as pd
+import json
 
 # --- Configuration (matching apply_bkt.py's output) ---
 
@@ -17,19 +18,8 @@ SYNTHETIC_BKT_ENHANCED_DATA_PATH = os.path.join(OUTPUT_DIR, "synthetic_bkt_enhan
 VISUALIZATION_OUTPUT_DIR = "bkt_insights_visualizations"
 os.makedirs(VISUALIZATION_OUTPUT_DIR, exist_ok=True)
 
-# TODO : Take parameters from bkt_trained_params.json
-bkt_parameters_for_skills = {
-    "2": {"p_L0": 0.5518726496988559, "p_T": 0.054599803942255186, "p_G": 0.15280419371172577, "p_S": 0.283730869533529},
-    "47": {"p_L0": 0.6013625220910531, "p_T": 0.014042558179621297, "p_G": 0.40867179206667226, "p_S": 0.18451685429206904},
-    "70": {"p_L0": 0.06346624756989107, "p_T": 0.015019466780714329, "p_G": 0.499, "p_S": 0.0011589602818238864},
-    "77": {"p_L0": 0.39754629484887033, "p_T": 0.08645681608023378, "p_G": 0.12079644133569117, "p_S": 0.20032319869031429},
-    "9": {"p_L0": 0.7883550125345102, "p_T": 0.12491825445144866, "p_G": 0.10592501614891726, "p_S": 0.24186815129207107},
-    "12": {"p_L0": 0.6640535621547735, "p_T": 0.13995058441637595, "p_G": 0.08056906223174329, "p_S": 0.299},
-    "15": {"p_L0": 0.6948304703163661, "p_T": 0.1583411284728467, "p_G": 0.3447804622067009, "p_S": 0.14337337647467427},
-    "39": {"p_L0": 0.9158572649369723, "p_T": 0.16627959001546574, "p_G": 0.07737523387440379, "p_S": 0.27521383399867394},
-    "65": {"p_L0": 0.5331471967466868, "p_T": 0.2609809161285262, "p_G": 0.13759183588113108, "p_S": 0.2458614028084561},
-    "58": {"p_L0": 0.572877957853038, "p_T": 0.20568345019037726, "p_G": 0.33985048714231675, "p_S": 0.11850031705345915}
-}
+with open("data/bkt_trained_params.json", "r") as file:
+    bkt_parameters_for_skills = json.load(file)
 
 # --- Plotting function for trajectories ---
 def plot_bkt_trajectory_and_prediction(student_id, skill_id, sequence, save_dir):
